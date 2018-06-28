@@ -1,8 +1,12 @@
+#install.packages('ggplot2', dep = T)
 library(ggplot2)
-##############
-#LINK SECRETO#
+library(dplyr)
+library(treemapify)
+################
+# LINK SECRETO #
+# David Blackwell - Estatistica Basica #
 # link <- https://www.passeidireto.com/arquivo/11095284/estatistica-basica---david-blackwell 
-#############
+################
 
 #T1 Data Science HP - Felipe Boff Nunes
 #Russian Presidential Elections 2018
@@ -13,18 +17,13 @@ data <- read.csv('./voting_data_eng.csv')
 # Data Info:
 # The dataset contains 94487 lines and 23 columns.
 # It contains how many votes each candidate had and from where it came.
-# Unfortunately, the dataset, although very well formated, 
-# still was difficult to mess with as consequence of inexperience.
 
-
-#for the for
-candidates <- rep(NA, size)
 # The summary function gives a good view of the dataset info.
 summary(data)
      
 attach(data)
-#Multiplot of number of votes for candidate
-#multiplot function in the end of the file#
+# Multiplot of number of votes for candidate
+# multiplot function in the end of the file #
 p1 <- ggplot(data, aes(Baburin.Sergei.Nikolaevich)) + geom_histogram()
 p2 <- ggplot(data, aes(Grudinin.Pavel.Nikolaevich)) + geom_histogram()
 p3 <- ggplot(data, aes(Zhirinovskiy.Vladimir.Volfovich)) + geom_histogram()
@@ -34,6 +33,26 @@ p6 <- ggplot(data, aes(Suraikin.Maksim.Aleksandrovich)) + geom_histogram()
 p7 <- ggplot(data, aes(Titov.Boris.Yurievich)) + geom_histogram()
 p8 <- ggplot(data, aes(Yavlinskiy.Gregory.Alekseivich)) + geom_histogram()
 multiplot(p1, p2, p3, p4, p5, p6, p7, p8, cols=4)
+####
+
+
+# Pie Chart of Votes for Candidate
+df <- data.frame(
+  names <- rep(NA, 8),
+  votes <- rep(NA, 8)
+)
+
+for (i in 1:8){
+  votes[i] <- sum(data[i+3])
+  names[i] <- colnames(data[i+3])
+}
+
+pc <- ggplot(df, aes(x="", y = votes, fill = names)) +
+  geom_bar(width = 1, stat = "identity") +
+  coord_polar("y", start=0) + 
+  scale_fill_brewer(palette="Dark2")
+
+pc
 ####
 
 # Multiplot of number of votes for candidate by Region Name
@@ -64,14 +83,27 @@ q8<- ggplot(data, aes(x=region_name, y=Yavlinskiy.Gregory.Alekseivich))+
 multiplot(q1,q2,q3,q4,q5,q6,q7,q8, cols= 4)
 ####
 
-# Here my intention was to see if there was some 
-# correlation with the regions which voted less for Putin
-# with the regions which had most of of the ballots lost (as ratio of N_votes to N_lost)
-# Time and auto-diligence are my worst enemies, so I haven't finished it
-r <- ggplot(data, aes(x=reorder(region_name, -Number.of.lost.ballot.papers), y=Number.of.lost.ballot.papers))+
-  geom_bar(width = 1, stat = "identity")
-r
-####
+# Treemap of candidates by region
+regions <- unique(data[2], incomparables = FALSE)
+regions_T <- t(regions)
+plots <- list()
+for (i in 1:lengths(regions)){
+  votes_region = subset(data, region_name == regions_T[i])
+  sum_votes <- rep(NA , 8)
+  for (j in 1:8){
+    sum_votes[j] <- sum(votes_region[j+3])
+  }
+  datatree <- data.frame(
+    sum_votes = sum_votes,
+    names = names,
+    region_name = rep(votes_region[[2]][1], 8)
+  )
+  p_aux <- ggplot(datatree, aes(area = sum_votes, fill = names, label = names)) + geom_treemap() +
+    scale_fill_discrete(name = regions_T[i])
+  print(p_aux)
+  plots[[i]] <- p1
+}
+
 
 #A função abaixo vem do
 # link <- http://www.cookbook-r.com/Graphs/Multiple_graphs_on_one_page_(ggplot2)/
